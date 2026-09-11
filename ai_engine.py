@@ -1,30 +1,34 @@
 """
 ai_engine.py
 ------------
-This file talks to the Anthropic Claude API to do the actual "AI brain work"
-of SkillGap AI:
+This file talks to the Google Gemini API (FREE tier, no credit card required)
+to do the actual "AI brain work" of SkillGap AI:
 
     - Reads the resume text + job description
-    - Asks Claude to compare them
+    - Asks Gemini to compare them
     - Gets back a structured JSON result with match %, skills, gaps,
       strengths, weaknesses, a learning roadmap, and project recommendations
 
 No fake/hardcoded results are used anywhere in this file — every analysis
 is generated live by the AI model based on the actual resume and job text
 that is passed in.
+
+NOTE: This uses the newer "google-genai" SDK (import: `from google import genai`),
+NOT the older/deprecated "google-generativeai" package. The newer SDK correctly
+supports Google's current API key format (keys starting with "AQ.").
 """
 
 import os
 import json
 import re
 from dotenv import load_dotenv
-import anthropic
+from google import genai
+from google.genai import types
 
 # Load variables from a local .env file (used only for local development).
 load_dotenv()
 
-MODEL_NAME = "claude-sonnet-5"
-MAX_TOKENS = 4096
+MODEL_NAME = "gemini-2.5-flash"
 
 
 class AIEngineError(Exception):
@@ -32,25 +36,26 @@ class AIEngineError(Exception):
     pass
 
 
-def _get_client() -> anthropic.Anthropic:
+def _get_client() -> genai.Client:
     """
-    Creates the Anthropic API client using the ANTHROPIC_API_KEY environment
+    Creates the Gemini API client using the GEMINI_API_KEY environment
     variable. Never hardcode the key in source code.
     """
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise AIEngineError(
-            "No API key found. Please set the ANTHROPIC_API_KEY environment "
-            "variable (see .env.example) before running the app."
+            "No API key found. Please set the GEMINI_API_KEY environment "
+            "variable (see .env.example) before running the app. "
+            "Get a free key at https://aistudio.google.com/app/apikey"
         )
     try:
-        return anthropic.Anthropic(api_key=api_key)
+        return genai.Client(api_key=api_key)
     except Exception as exc:
         raise AIEngineError(f"Could not initialize the AI client: {exc}") from exc
 
 
 def _build_prompt(resume_text: str, job_description: str) -> str:
-    """Builds the instruction prompt sent to Claude."""
+    """Builds the instruction prompt sent to Gemini."""
     return f"""You are an expert technical recruiter and career coach AI embedded in a
 product called "SkillGap AI". A student has uploaded their resume and pasted
 a real job description. Your job is to carefully compare the two and produce
@@ -131,17 +136,15 @@ Rules:
 
 def _extract_json(raw_text: str) -> dict:
     """
-    Claude should return pure JSON, but this defensively strips markdown
+    Gemini should return pure JSON, but this defensively strips markdown
     code fences or stray text if the model adds any, then parses it.
     """
     text = raw_text.strip()
 
-    # Strip ```json ... ``` or ``` ... ``` fences if present
     fence_match = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.DOTALL)
     if fence_match:
         text = fence_match.group(1)
     else:
-        # Fall back to grabbing the first { ... last } block
         first_brace = text.find("{")
         last_brace = text.rfind("}")
         if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
@@ -176,7 +179,6 @@ def _validate_result_shape(data: dict) -> dict:
         if key not in data or data[key] is None:
             data[key] = default_value
 
-    # Clamp percentages to 0-100 just in case
     for pct_key in ("job_match_percentage", "experience_match_percentage"):
         try:
             data[pct_key] = max(0, min(100, int(data[pct_key])))
@@ -188,7 +190,7 @@ def _validate_result_shape(data: dict) -> dict:
 
 def analyze_resume_vs_job(resume_text: str, job_description: str) -> dict:
     """
-    Main entry point: sends the resume + job description to Claude and
+    Main entry point: sends the resume + job description to Gemini and
     returns a structured dictionary with the full analysis.
 
     Raises AIEngineError on any failure (missing key, network/API error,
@@ -203,40 +205,32 @@ def analyze_resume_vs_job(resume_text: str, job_description: str) -> dict:
     prompt = _build_prompt(resume_text, job_description)
 
     try:
-        response = client.messages.create(
+        response = client.models.generate_content(
             model=MODEL_NAME,
-            max_tokens=MAX_TOKENS,
-            messages=[{"role": "user", "content": prompt}],
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.4,
+                max_output_tokens=4096,
+            ),
         )
-    except anthropic.AuthenticationError as exc:
-        raise AIEngineError(
-            "Authentication with the AI service failed. Please check that your "
-            "ANTHROPIC_API_KEY is correct and active."
-        ) from exc
-    except anthropic.RateLimitError as exc:
-        raise AIEngineError(
-            "The AI service is currently rate-limited. Please wait a moment and try again."
-        ) from exc
-    except anthropic.APIConnectionError as exc:
-        raise AIEngineError(
-            "Could not connect to the AI service. Please check your internet connection."
-        ) from exc
-    except anthropic.APIStatusError as exc:
-        raise AIEngineError(
-            f"The AI service returned an error (status {exc.status_code}). Please try again shortly."
-        ) from exc
     except Exception as exc:
+        error_text = str(exc).lower()
+        if "api key not valid" in error_text or "api_key_invalid" in error_text or "permission" in error_text or "401" in error_text:
+            raise AIEngineError(
+                "Authentication with the AI service failed. Please check that your "
+                "GEMINI_API_KEY is correct, freshly copied, and active."
+            ) from exc
+        if "quota" in error_text or "rate" in error_text or "429" in error_text:
+            raise AIEngineError(
+                "The free AI quota has been used up for now, or too many requests were "
+                "sent at once. Please wait a minute and try again."
+            ) from exc
         raise AIEngineError(f"Unexpected error while calling the AI service: {exc}") from exc
 
-    if not response.content:
+    if not response or not getattr(response, "text", None):
         raise AIEngineError("The AI returned an empty response. Please try again.")
 
-    raw_text = "".join(
-        block.text for block in response.content if getattr(block, "type", "") == "text"
-    )
-
-    if not raw_text.strip():
-        raise AIEngineError("The AI returned an empty response. Please try again.")
+    raw_text = response.text
 
     data = _extract_json(raw_text)
     data = _validate_result_shape(data)

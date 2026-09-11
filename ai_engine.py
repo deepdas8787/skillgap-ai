@@ -14,7 +14,7 @@ from google.genai import types
 
 load_dotenv()
 
-MODEL_NAME = "gemini-3.8-flash"
+MODEL_NAME = "gemini-3.8-flash-lite"
 
 
 class AIEngineError(Exception):
@@ -256,6 +256,12 @@ def analyze_resume_vs_job(
             raise AIEngineError(
                 "Gemini API quota or rate limit reached. "
                 "Please wait and try again."
+            ) from exc
+
+        if "503" in error_text or "unavailable" in error_text:
+            raise AIEngineError(
+                "Gemini is temporarily overloaded. "
+                "Please wait a few minutes and try again."
             ) from exc
 
         if "404" in error_text or "not found" in error_text:

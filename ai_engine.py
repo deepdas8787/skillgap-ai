@@ -14,7 +14,7 @@ from google.genai import types
 
 load_dotenv()
 
-MODEL_NAME = "gemini-3.8-flash-lite"
+MODEL_NAME = "gemini-3.5-flash-lite"
 
 
 class AIEngineError(Exception):

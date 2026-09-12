@@ -28,7 +28,7 @@ from google.genai import types
 # Load variables from a local .env file (used only for local development).
 load_dotenv()
 
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-3.6-flash"
 
 
 class AIEngineError(Exception):
@@ -235,6 +235,40 @@ def analyze_resume_vs_job(resume_text: str, job_description: str) -> dict:
     data = _extract_json(raw_text)
     data = _validate_result_shape(data)
     return data
+
+
+def transcribe_audio(audio_bytes: bytes, mime_type: str = "audio/wav") -> str:
+    """
+    Transcribes spoken audio into text using Gemini's audio understanding.
+    Used to power the voice-input feature of the AI Assistant chat.
+    """
+    if not audio_bytes:
+        raise AIEngineError("No audio was recorded. Please try recording again.")
+
+    client = _get_client()
+
+    try:
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=[
+                types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+                "Transcribe the spoken words in this audio exactly, in the same "
+                "language they were spoken. Return ONLY the transcribed text, "
+                "with no extra commentary, quotes, or formatting.",
+            ],
+        )
+    except Exception as exc:
+        error_text = str(exc).lower()
+        if "api key not valid" in error_text or "api_key_invalid" in error_text or "permission" in error_text or "401" in error_text:
+            raise AIEngineError(
+                "Authentication with the AI service failed. Please check your GEMINI_API_KEY."
+            ) from exc
+        raise AIEngineError(f"Could not transcribe audio: {exc}") from exc
+
+    if not response or not getattr(response, "text", None):
+        raise AIEngineError("Could not understand the audio. Please try recording again, speaking clearly.")
+
+    return response.text.strip()
 
 
 def chat_with_assistant(conversation_history: list, latest_analysis: dict = None) -> str:

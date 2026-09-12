@@ -7,6 +7,7 @@ Run with:
     streamlit run app.py
 """
 
+import json
 import streamlit as st
 
 from resume_parser import (
@@ -15,7 +16,7 @@ from resume_parser import (
     validate_resume_text,
     ResumeParsingError,
 )
-from ai_engine import analyze_resume_vs_job, chat_with_assistant, AIEngineError
+from ai_engine import analyze_resume_vs_job, chat_with_assistant, transcribe_audio, AIEngineError
 from report_generator import generate_report, ReportGenerationError
 
 # --------------------------------------------------------------------------
@@ -299,14 +300,22 @@ st.markdown(
             color: white;
             border: none;
             border-radius: 12px;
-            padding: 0.6rem 1.4rem;
+            padding: 0.55rem 0.8rem;
             font-weight: 700;
-            font-size: 15px;
+            font-size: 14px;
+            white-space: normal;
+            line-height: 1.25;
             transition: all 0.2s ease;
         }
         div.stButton > button:hover {
             filter: brightness(1.12);
             transform: translateY(-1px);
+        }
+        @media (max-width: 600px) {
+            div.stButton > button {
+                font-size: 12.5px;
+                padding: 0.5rem 0.4rem;
+            }
         }
 
         @keyframes fadeInUp {
@@ -328,20 +337,17 @@ st.markdown(
 # --------------------------------------------------------------------------
 # TOP NAV
 # --------------------------------------------------------------------------
-nav_l, nav_m, nav_r = st.columns([2, 5, 2])
-with nav_l:
-    st.markdown("### 🧭 SkillGap AI")
-with nav_r:
-    b1, b2, b3 = st.columns(3)
-    with b1:
-        if st.button("Home", use_container_width=True):
-            go_to("home")
-    with b2:
-        if st.button("Analyzer", use_container_width=True):
-            go_to("analyzer")
-    with b3:
-        if st.button("🤖 AI Assistant", use_container_width=True):
-            go_to("assistant")
+st.markdown("### 🧭 SkillGap AI")
+n1, n2, n3 = st.columns(3)
+with n1:
+    if st.button("🏠 Home", use_container_width=True):
+        go_to("home")
+with n2:
+    if st.button("📊 Analyzer", use_container_width=True):
+        go_to("analyzer")
+with n3:
+    if st.button("🤖 Assistant", use_container_width=True):
+        go_to("assistant")
 
 st.markdown("<hr style='border-color: rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
 
@@ -744,12 +750,42 @@ def render_dashboard(analysis: dict):
 
 
 # ==========================================================================
+# HELPER — text-to-speech "Read Aloud" widget (uses the browser's built-in
+# speech engine, no extra service or API needed)
+# ==========================================================================
+def render_read_aloud_button(text: str, key: str):
+    import streamlit.components.v1 as components
+    safe_text = json.dumps(text)
+    components.html(
+        f"""
+        <button id="btn-{key}" style="
+            background: linear-gradient(90deg, #6366f1, #ec4899);
+            color: white; border: none; border-radius: 10px;
+            padding: 6px 14px; font-weight: 700; font-size: 13px;
+            cursor: pointer; font-family: Inter, sans-serif;">
+            🔊 Read Aloud
+        </button>
+        <script>
+            const btn = document.getElementById("btn-{key}");
+            btn.onclick = function() {{
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance({safe_text});
+                utterance.rate = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }};
+        </script>
+        """,
+        height=45,
+    )
+
+
+# ==========================================================================
 # AI ASSISTANT (CHAT) PAGE
 # ==========================================================================
 def render_assistant():
     st.markdown('<div class="section-title">🤖 AI Career Assistant</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="section-sub">Ask anything about careers, skills, resumes, or your analysis results</div>',
+        '<div class="section-sub">Ask anything about careers, skills, resumes, or your analysis results — by typing or speaking</div>',
         unsafe_allow_html=True,
     )
 
@@ -760,14 +796,43 @@ def render_assistant():
         )
 
     # Render existing chat history
-    for turn in st.session_state.chat_history:
+    for i, turn in enumerate(st.session_state.chat_history):
         with st.chat_message("user" if turn["role"] == "user" else "assistant"):
             st.markdown(turn["content"])
+            if turn["role"] == "assistant":
+                render_read_aloud_button(turn["content"], key=f"read_{i}")
 
     if st.session_state.chat_error:
         st.error(st.session_state.chat_error)
 
-    user_message = st.chat_input("Ask your AI career assistant something...")
+    # ---- Voice input ----
+    st.markdown("##### 🎤 Or speak your question")
+    try:
+        from streamlit_mic_recorder import mic_recorder
+        audio = mic_recorder(
+            start_prompt="🎤 Start recording",
+            stop_prompt="⏹️ Stop recording",
+            just_once=True,
+            use_container_width=True,
+            key="voice_recorder",
+        )
+    except ImportError:
+        audio = None
+        st.caption("Voice input needs the `streamlit-mic-recorder` package (see requirements.txt).")
+
+    voice_message = None
+    if audio and audio.get("bytes"):
+        with st.spinner("🎧 Transcribing your voice..."):
+            try:
+                voice_message = transcribe_audio(audio["bytes"], mime_type="audio/wav")
+            except AIEngineError as exc:
+                st.session_state.chat_error = str(exc)
+                st.error(str(exc))
+
+    # ---- Text input ----
+    typed_message = st.chat_input("Ask your AI career assistant something...")
+
+    user_message = voice_message or typed_message
 
     if user_message:
         st.session_state.chat_history.append({"role": "user", "content": user_message})
@@ -782,6 +847,7 @@ def render_assistant():
                         latest_analysis=st.session_state.analysis,
                     )
                     st.markdown(reply)
+                    render_read_aloud_button(reply, key=f"read_new_{len(st.session_state.chat_history)}")
                     st.session_state.chat_history.append({"role": "assistant", "content": reply})
                     st.session_state.chat_error = None
                 except AIEngineError as exc:

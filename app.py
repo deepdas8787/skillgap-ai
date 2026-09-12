@@ -15,7 +15,7 @@ from resume_parser import (
     validate_resume_text,
     ResumeParsingError,
 )
-from ai_engine import analyze_resume_vs_job, AIEngineError
+from ai_engine import analyze_resume_vs_job, chat_with_assistant, AIEngineError
 from report_generator import generate_report, ReportGenerationError
 
 # --------------------------------------------------------------------------
@@ -107,6 +107,8 @@ defaults = {
     "analysis": None,
     "student_name": "",
     "error_message": None,
+    "chat_history": [],
+    "chat_error": None,
 }
 for key, value in defaults.items():
     if key not in st.session_state:
@@ -330,13 +332,16 @@ nav_l, nav_m, nav_r = st.columns([2, 5, 2])
 with nav_l:
     st.markdown("### 🧭 SkillGap AI")
 with nav_r:
-    b1, b2 = st.columns(2)
+    b1, b2, b3 = st.columns(3)
     with b1:
         if st.button("Home", use_container_width=True):
             go_to("home")
     with b2:
         if st.button("Analyzer", use_container_width=True):
             go_to("analyzer")
+    with b3:
+        if st.button("🤖 AI Assistant", use_container_width=True):
+            go_to("assistant")
 
 st.markdown("<hr style='border-color: rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
 
@@ -739,9 +744,63 @@ def render_dashboard(analysis: dict):
 
 
 # ==========================================================================
+# AI ASSISTANT (CHAT) PAGE
+# ==========================================================================
+def render_assistant():
+    st.markdown('<div class="section-title">🤖 AI Career Assistant</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-sub">Ask anything about careers, skills, resumes, or your analysis results</div>',
+        unsafe_allow_html=True,
+    )
+
+    if st.session_state.analysis:
+        st.info(
+            "💡 I have access to your latest analysis, so feel free to ask things like "
+            "'Which skill should I learn first?' or 'Why is my match score low?'"
+        )
+
+    # Render existing chat history
+    for turn in st.session_state.chat_history:
+        with st.chat_message("user" if turn["role"] == "user" else "assistant"):
+            st.markdown(turn["content"])
+
+    if st.session_state.chat_error:
+        st.error(st.session_state.chat_error)
+
+    user_message = st.chat_input("Ask your AI career assistant something...")
+
+    if user_message:
+        st.session_state.chat_history.append({"role": "user", "content": user_message})
+        with st.chat_message("user"):
+            st.markdown(user_message)
+
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                try:
+                    reply = chat_with_assistant(
+                        st.session_state.chat_history,
+                        latest_analysis=st.session_state.analysis,
+                    )
+                    st.markdown(reply)
+                    st.session_state.chat_history.append({"role": "assistant", "content": reply})
+                    st.session_state.chat_error = None
+                except AIEngineError as exc:
+                    st.session_state.chat_error = str(exc)
+                    st.error(str(exc))
+
+    if st.session_state.chat_history:
+        if st.button("🗑️ Clear conversation"):
+            st.session_state.chat_history = []
+            st.session_state.chat_error = None
+            st.rerun()
+
+
+# ==========================================================================
 # ROUTER
 # ==========================================================================
 if st.session_state.page == "home":
     render_home()
 elif st.session_state.page == "analyzer":
     render_analyzer()
+elif st.session_state.page == "assistant":
+    render_assistant()

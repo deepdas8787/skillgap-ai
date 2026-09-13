@@ -196,11 +196,36 @@ CSS_TEMPLATE = string.Template(
 
         #MainMenu, footer, header {visibility: hidden;}
 
+        html, body, .stApp,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stHeader"],
+        [data-testid="stToolbar"],
+        [data-testid="stBottomBlockContainer"],
+        [data-testid="stSidebar"],
         .main {
-            background: $body_bg;
+            background: $body_bg !important;
         }
-        .stApp, .block-container, p, span, label, .stMarkdown, .stText {
+        [data-testid="stHeader"] {
+            background: transparent !important;
+        }
+        .stApp, .block-container, p, span, label, .stMarkdown, .stText,
+        h1, h2, h3, h4, h5, h6,
+        [data-testid="stChatMessage"], [data-testid="stChatMessage"] p,
+        [data-testid="stMarkdownContainer"] {
             color: $text_main;
+        }
+        [data-testid="stChatMessage"] {
+            background: $card_bg !important;
+            border: 1px solid $card_border !important;
+            border-radius: 14px !important;
+        }
+        .stTextArea textarea, .stTextInput input {
+            background: $card_bg !important;
+            color: $text_main !important;
+            border-color: $card_border !important;
+        }
+        [data-testid="stFileUploaderDropzone"] * {
+            color: $text_main !important;
         }
 
         .block-container {

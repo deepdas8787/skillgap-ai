@@ -151,6 +151,12 @@ THEMES = {
         "hero_badge_bg": "rgba(129, 140, 248, 0.15)",
         "hero_badge_border": "rgba(129, 140, 248, 0.4)",
         "hero_badge_text": "#c7d2fe",
+        "badge_have_text": "#6ee7b7",
+        "badge_missing_text": "#fca5a5",
+        "tag_high": "#fca5a5",
+        "tag_medium": "#fcd34d",
+        "tag_low": "#93c5fd",
+        "alert_text": "#1e293b",
     },
     "light": {
         "body_bg": "radial-gradient(circle at 10% 0%, #f5f3ff 0%, #eef2ff 45%, #ffffff 100%)",
@@ -177,6 +183,12 @@ THEMES = {
         "hero_badge_bg": "rgba(99,102,241,0.10)",
         "hero_badge_border": "rgba(99,102,241,0.35)",
         "hero_badge_text": "#4338ca",
+        "badge_have_text": "#059669",
+        "badge_missing_text": "#dc2626",
+        "tag_high": "#dc2626",
+        "tag_medium": "#b45309",
+        "tag_low": "#2563eb",
+        "alert_text": "#1e293b",
     },
 }
 
@@ -225,6 +237,13 @@ CSS_TEMPLATE = string.Template(
             border-color: $card_border !important;
         }
         [data-testid="stFileUploaderDropzone"] * {
+            color: $text_main !important;
+        }
+        [data-testid="stAlert"], [data-testid="stAlert"] * {
+            color: $alert_text !important;
+        }
+        [data-testid="stChatInput"] textarea {
+            background: $card_bg !important;
             color: $text_main !important;
         }
 
@@ -321,12 +340,12 @@ CSS_TEMPLATE = string.Template(
         .badge-have {
             background: rgba(52, 211, 153, 0.15);
             border: 1px solid rgba(52, 211, 153, 0.5);
-            color: #059669;
+            color: $badge_have_text;
         }
         .badge-missing {
             background: rgba(248, 113, 113, 0.15);
             border: 1px solid rgba(248, 113, 113, 0.5);
-            color: #dc2626;
+            color: $badge_missing_text;
         }
 
         /* ---------- METRIC / SCORE CARDS ---------- */
@@ -373,9 +392,9 @@ CSS_TEMPLATE = string.Template(
         .roadmap-body { font-size: 14px; color: $roadmap_body; line-height: 1.5; }
 
         /* ---------- PRIORITY TAGS ---------- */
-        .tag-high { color: #dc2626; font-weight: 700; }
-        .tag-medium { color: #d97706; font-weight: 700; }
-        .tag-low { color: #2563eb; font-weight: 700; }
+        .tag-high { color: $tag_high; font-weight: 700; }
+        .tag-medium { color: $tag_medium; font-weight: 700; }
+        .tag-low { color: $tag_low; font-weight: 700; }
 
         .gap-card {
             background: $gap_card_bg;

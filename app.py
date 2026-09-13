@@ -8,6 +8,7 @@ Run with:
 """
 
 import json
+import string
 import streamlit as st
 
 from resume_parser import (
@@ -110,6 +111,7 @@ defaults = {
     "error_message": None,
     "chat_history": [],
     "chat_error": None,
+    "theme": "dark",
 }
 for key, value in defaults.items():
     if key not in st.session_state:
@@ -121,9 +123,69 @@ def go_to(page_name: str):
 
 
 # --------------------------------------------------------------------------
-# GLOBAL STYLES
+# THEME DEFINITIONS (Dark / Light)
 # --------------------------------------------------------------------------
-st.markdown(
+THEMES = {
+    "dark": {
+        "body_bg": "radial-gradient(circle at 10% 0%, #1b1030 0%, #0f0c29 45%, #0a0a12 100%)",
+        "text_main": "#f8fafc",
+        "text_muted": "#94a3b8",
+        "hero_sub": "#cbd5e1",
+        "hr_color": "rgba(255,255,255,0.08)",
+        "card_bg": "linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
+        "card_border": "rgba(255,255,255,0.09)",
+        "card_border_hover": "rgba(165, 180, 252, 0.5)",
+        "card_title": "#f1f5f9",
+        "card_text": "#94a3b8",
+        "metric_card_bg": "linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02))",
+        "metric_card_border": "rgba(255,255,255,0.09)",
+        "match_hero_bg": "linear-gradient(135deg, rgba(99,102,241,0.25), rgba(236,72,153,0.2))",
+        "match_hero_border": "rgba(165,180,252,0.4)",
+        "roadmap_bg": "rgba(255,255,255,0.04)",
+        "roadmap_title": "#f1f5f9",
+        "roadmap_body": "#cbd5e1",
+        "gap_card_bg": "rgba(255,255,255,0.04)",
+        "gap_card_border": "rgba(255,255,255,0.08)",
+        "dropzone_bg": "rgba(255,255,255,0.03)",
+        "dropzone_border": "rgba(165,180,252,0.4)",
+        "hero_badge_bg": "rgba(129, 140, 248, 0.15)",
+        "hero_badge_border": "rgba(129, 140, 248, 0.4)",
+        "hero_badge_text": "#c7d2fe",
+    },
+    "light": {
+        "body_bg": "radial-gradient(circle at 10% 0%, #f5f3ff 0%, #eef2ff 45%, #ffffff 100%)",
+        "text_main": "#1e1b4b",
+        "text_muted": "#475569",
+        "hero_sub": "#334155",
+        "hr_color": "rgba(15,23,42,0.10)",
+        "card_bg": "linear-gradient(160deg, rgba(99,102,241,0.07), rgba(236,72,153,0.03))",
+        "card_border": "rgba(15,23,42,0.08)",
+        "card_border_hover": "rgba(99,102,241,0.5)",
+        "card_title": "#1e1b4b",
+        "card_text": "#475569",
+        "metric_card_bg": "linear-gradient(160deg, rgba(99,102,241,0.08), rgba(236,72,153,0.04))",
+        "metric_card_border": "rgba(15,23,42,0.08)",
+        "match_hero_bg": "linear-gradient(135deg, rgba(99,102,241,0.14), rgba(236,72,153,0.10))",
+        "match_hero_border": "rgba(99,102,241,0.35)",
+        "roadmap_bg": "rgba(99,102,241,0.06)",
+        "roadmap_title": "#1e1b4b",
+        "roadmap_body": "#334155",
+        "gap_card_bg": "rgba(99,102,241,0.06)",
+        "gap_card_border": "rgba(15,23,42,0.08)",
+        "dropzone_bg": "rgba(99,102,241,0.05)",
+        "dropzone_border": "rgba(99,102,241,0.4)",
+        "hero_badge_bg": "rgba(99,102,241,0.10)",
+        "hero_badge_border": "rgba(99,102,241,0.35)",
+        "hero_badge_text": "#4338ca",
+    },
+}
+
+active_theme = THEMES[st.session_state.theme]
+
+# --------------------------------------------------------------------------
+# GLOBAL STYLES (rebuilt per-theme every run)
+# --------------------------------------------------------------------------
+CSS_TEMPLATE = string.Template(
     """
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -135,7 +197,10 @@ st.markdown(
         #MainMenu, footer, header {visibility: hidden;}
 
         .main {
-            background: radial-gradient(circle at 10% 0%, #1b1030 0%, #0f0c29 45%, #0a0a12 100%);
+            background: $body_bg;
+        }
+        .stApp, .block-container, p, span, label, .stMarkdown, .stText {
+            color: $text_main;
         }
 
         .block-container {
@@ -153,9 +218,9 @@ st.markdown(
             display: inline-block;
             padding: 6px 16px;
             border-radius: 999px;
-            background: rgba(129, 140, 248, 0.15);
-            border: 1px solid rgba(129, 140, 248, 0.4);
-            color: #c7d2fe;
+            background: $hero_badge_bg;
+            border: 1px solid $hero_badge_border;
+            color: $hero_badge_text;
             font-size: 13px;
             font-weight: 600;
             letter-spacing: 0.3px;
@@ -172,7 +237,7 @@ st.markdown(
         }
         .hero-sub {
             font-size: 18px;
-            color: #cbd5e1;
+            color: $hero_sub;
             max-width: 720px;
             margin: 0 auto 34px auto;
             line-height: 1.6;
@@ -180,8 +245,8 @@ st.markdown(
 
         /* ---------- CARDS ---------- */
         .glass-card {
-            background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-            border: 1px solid rgba(255,255,255,0.09);
+            background: $card_bg;
+            border: 1px solid $card_border;
             border-radius: 18px;
             padding: 26px 24px;
             height: 100%;
@@ -189,11 +254,11 @@ st.markdown(
         }
         .glass-card:hover {
             transform: translateY(-4px);
-            border-color: rgba(165, 180, 252, 0.5);
+            border-color: $card_border_hover;
         }
         .card-icon { font-size: 30px; margin-bottom: 10px; display:block; }
-        .card-title { font-size: 17px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
-        .card-text { font-size: 14px; color: #94a3b8; line-height: 1.5; }
+        .card-title { font-size: 17px; font-weight: 700; color: $card_title; margin-bottom: 6px; }
+        .card-text { font-size: 14px; color: $card_text; line-height: 1.5; }
 
         .step-number {
             font-size: 34px;
@@ -207,14 +272,14 @@ st.markdown(
         .section-title {
             font-size: 30px;
             font-weight: 800;
-            color: #f8fafc;
+            color: $text_main;
             text-align: center;
             margin-top: 10px;
             margin-bottom: 6px;
         }
         .section-sub {
             text-align: center;
-            color: #94a3b8;
+            color: $text_muted;
             font-size: 15px;
             margin-bottom: 34px;
         }
@@ -231,18 +296,18 @@ st.markdown(
         .badge-have {
             background: rgba(52, 211, 153, 0.15);
             border: 1px solid rgba(52, 211, 153, 0.5);
-            color: #6ee7b7;
+            color: #059669;
         }
         .badge-missing {
             background: rgba(248, 113, 113, 0.15);
             border: 1px solid rgba(248, 113, 113, 0.5);
-            color: #fca5a5;
+            color: #dc2626;
         }
 
         /* ---------- METRIC / SCORE CARDS ---------- */
         .metric-card {
-            background: linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
-            border: 1px solid rgba(255,255,255,0.09);
+            background: $metric_card_bg;
+            border: 1px solid $metric_card_border;
             border-radius: 18px;
             padding: 22px;
             text-align: center;
@@ -256,14 +321,14 @@ st.markdown(
         }
         .metric-label {
             font-size: 14px;
-            color: #94a3b8;
+            color: $text_muted;
             font-weight: 600;
             margin-top: 4px;
         }
 
         .match-hero {
-            background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(236,72,153,0.2));
-            border: 1px solid rgba(165,180,252,0.4);
+            background: $match_hero_bg;
+            border: 1px solid $match_hero_border;
             border-radius: 22px;
             padding: 34px;
             text-align: center;
@@ -272,24 +337,24 @@ st.markdown(
 
         /* ---------- ROADMAP ---------- */
         .roadmap-item {
-            background: rgba(255,255,255,0.04);
+            background: $roadmap_bg;
             border-left: 4px solid #818cf8;
             border-radius: 12px;
             padding: 16px 20px;
             margin-bottom: 14px;
         }
-        .roadmap-title { font-size: 16px; font-weight: 700; color: #f1f5f9; }
-        .roadmap-meta { font-size: 12.5px; color: #a5b4fc; font-weight: 600; margin-bottom: 6px;}
-        .roadmap-body { font-size: 14px; color: #cbd5e1; line-height: 1.5; }
+        .roadmap-title { font-size: 16px; font-weight: 700; color: $roadmap_title; }
+        .roadmap-meta { font-size: 12.5px; color: #6366f1; font-weight: 600; margin-bottom: 6px;}
+        .roadmap-body { font-size: 14px; color: $roadmap_body; line-height: 1.5; }
 
         /* ---------- PRIORITY TAGS ---------- */
-        .tag-high { color: #fca5a5; font-weight: 700; }
-        .tag-medium { color: #fcd34d; font-weight: 700; }
-        .tag-low { color: #93c5fd; font-weight: 700; }
+        .tag-high { color: #dc2626; font-weight: 700; }
+        .tag-medium { color: #d97706; font-weight: 700; }
+        .tag-low { color: #2563eb; font-weight: 700; }
 
         .gap-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: $gap_card_bg;
+            border: 1px solid $gap_card_border;
             border-radius: 14px;
             padding: 18px 20px;
             margin-bottom: 12px;
@@ -325,20 +390,21 @@ st.markdown(
         .fade-in { animation: fadeInUp 0.6s ease; }
 
         section[data-testid="stFileUploaderDropzone"] {
-            background: rgba(255,255,255,0.03);
-            border: 1.5px dashed rgba(165,180,252,0.4);
+            background: $dropzone_bg;
+            border: 1.5px dashed $dropzone_border;
             border-radius: 14px;
         }
     </style>
-    """,
-    unsafe_allow_html=True,
+    """
 )
+
+st.markdown(CSS_TEMPLATE.substitute(active_theme), unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------
 # TOP NAV
 # --------------------------------------------------------------------------
 st.markdown("### 🧭 SkillGap AI")
-n1, n2, n3 = st.columns(3)
+n1, n2, n3, n4 = st.columns(4)
 with n1:
     if st.button("🏠 Home", use_container_width=True):
         go_to("home")
@@ -348,6 +414,11 @@ with n2:
 with n3:
     if st.button("🤖 Assistant", use_container_width=True):
         go_to("assistant")
+with n4:
+    theme_label = "☀️ Light Mode" if st.session_state.theme == "dark" else "🌙 Dark Mode"
+    if st.button(theme_label, use_container_width=True):
+        st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
+        st.rerun()
 
 st.markdown("<hr style='border-color: rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
 

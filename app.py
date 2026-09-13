@@ -8,7 +8,6 @@ Run with:
 """
 
 import json
-import string
 import streamlit as st
 
 from resume_parser import (
@@ -111,7 +110,6 @@ defaults = {
     "error_message": None,
     "chat_history": [],
     "chat_error": None,
-    "theme": "dark",
 }
 for key, value in defaults.items():
     if key not in st.session_state:
@@ -123,81 +121,9 @@ def go_to(page_name: str):
 
 
 # --------------------------------------------------------------------------
-# THEME DEFINITIONS (Dark / Light)
+# GLOBAL STYLES
 # --------------------------------------------------------------------------
-THEMES = {
-    "dark": {
-        "body_bg": "radial-gradient(circle at 10% 0%, #1b1030 0%, #0f0c29 45%, #0a0a12 100%)",
-        "text_main": "#f8fafc",
-        "text_muted": "#94a3b8",
-        "hero_sub": "#cbd5e1",
-        "hr_color": "rgba(255,255,255,0.08)",
-        "card_bg": "linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
-        "card_border": "rgba(255,255,255,0.09)",
-        "card_border_hover": "rgba(165, 180, 252, 0.5)",
-        "card_title": "#f1f5f9",
-        "card_text": "#94a3b8",
-        "metric_card_bg": "linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02))",
-        "metric_card_border": "rgba(255,255,255,0.09)",
-        "match_hero_bg": "linear-gradient(135deg, rgba(99,102,241,0.25), rgba(236,72,153,0.2))",
-        "match_hero_border": "rgba(165,180,252,0.4)",
-        "roadmap_bg": "rgba(255,255,255,0.04)",
-        "roadmap_title": "#f1f5f9",
-        "roadmap_body": "#cbd5e1",
-        "gap_card_bg": "rgba(255,255,255,0.04)",
-        "gap_card_border": "rgba(255,255,255,0.08)",
-        "dropzone_bg": "rgba(255,255,255,0.03)",
-        "dropzone_border": "rgba(165,180,252,0.4)",
-        "hero_badge_bg": "rgba(129, 140, 248, 0.15)",
-        "hero_badge_border": "rgba(129, 140, 248, 0.4)",
-        "hero_badge_text": "#c7d2fe",
-        "badge_have_text": "#6ee7b7",
-        "badge_missing_text": "#fca5a5",
-        "tag_high": "#fca5a5",
-        "tag_medium": "#fcd34d",
-        "tag_low": "#93c5fd",
-        "alert_text": "#1e293b",
-    },
-    "light": {
-        "body_bg": "radial-gradient(circle at 10% 0%, #f5f3ff 0%, #eef2ff 45%, #ffffff 100%)",
-        "text_main": "#1e1b4b",
-        "text_muted": "#475569",
-        "hero_sub": "#334155",
-        "hr_color": "rgba(15,23,42,0.10)",
-        "card_bg": "linear-gradient(160deg, rgba(99,102,241,0.07), rgba(236,72,153,0.03))",
-        "card_border": "rgba(15,23,42,0.08)",
-        "card_border_hover": "rgba(99,102,241,0.5)",
-        "card_title": "#1e1b4b",
-        "card_text": "#475569",
-        "metric_card_bg": "linear-gradient(160deg, rgba(99,102,241,0.08), rgba(236,72,153,0.04))",
-        "metric_card_border": "rgba(15,23,42,0.08)",
-        "match_hero_bg": "linear-gradient(135deg, rgba(99,102,241,0.14), rgba(236,72,153,0.10))",
-        "match_hero_border": "rgba(99,102,241,0.35)",
-        "roadmap_bg": "rgba(99,102,241,0.06)",
-        "roadmap_title": "#1e1b4b",
-        "roadmap_body": "#334155",
-        "gap_card_bg": "rgba(99,102,241,0.06)",
-        "gap_card_border": "rgba(15,23,42,0.08)",
-        "dropzone_bg": "rgba(99,102,241,0.05)",
-        "dropzone_border": "rgba(99,102,241,0.4)",
-        "hero_badge_bg": "rgba(99,102,241,0.10)",
-        "hero_badge_border": "rgba(99,102,241,0.35)",
-        "hero_badge_text": "#4338ca",
-        "badge_have_text": "#059669",
-        "badge_missing_text": "#dc2626",
-        "tag_high": "#dc2626",
-        "tag_medium": "#b45309",
-        "tag_low": "#2563eb",
-        "alert_text": "#1e293b",
-    },
-}
-
-active_theme = THEMES[st.session_state.theme]
-
-# --------------------------------------------------------------------------
-# GLOBAL STYLES (rebuilt per-theme every run)
-# --------------------------------------------------------------------------
-CSS_TEMPLATE = string.Template(
+st.markdown(
     """
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -208,46 +134,8 @@ CSS_TEMPLATE = string.Template(
 
         #MainMenu, footer, header {visibility: hidden;}
 
-        html, body, .stApp,
-        [data-testid="stAppViewContainer"],
-        [data-testid="stHeader"],
-        [data-testid="stToolbar"],
-        [data-testid="stBottomBlockContainer"],
-        [data-testid="stSidebar"],
         .main {
-            background: $body_bg !important;
-        }
-        [data-testid="stHeader"] {
-            background: transparent !important;
-        }
-        .stApp, .block-container, p, span, label, .stMarkdown, .stText,
-        h1, h2, h3, h4, h5, h6,
-        [data-testid="stChatMessage"], [data-testid="stChatMessage"] p,
-        [data-testid="stMarkdownContainer"],
-        [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p,
-        [data-testid="stCaptionContainer"], .stCaption,
-        [data-testid="stExpander"] summary, [data-testid="stExpander"] p {
-            color: $text_main !important;
-        }
-        [data-testid="stChatMessage"] {
-            background: $card_bg !important;
-            border: 1px solid $card_border !important;
-            border-radius: 14px !important;
-        }
-        .stTextArea textarea, .stTextInput input {
-            background: $card_bg !important;
-            color: $text_main !important;
-            border-color: $card_border !important;
-        }
-        [data-testid="stFileUploaderDropzone"] * {
-            color: $text_main !important;
-        }
-        [data-testid="stAlert"], [data-testid="stAlert"] * {
-            color: $alert_text !important;
-        }
-        [data-testid="stChatInput"] textarea {
-            background: $card_bg !important;
-            color: $text_main !important;
+            background: radial-gradient(circle at 10% 0%, #1b1030 0%, #0f0c29 45%, #0a0a12 100%);
         }
 
         .block-container {
@@ -265,9 +153,9 @@ CSS_TEMPLATE = string.Template(
             display: inline-block;
             padding: 6px 16px;
             border-radius: 999px;
-            background: $hero_badge_bg;
-            border: 1px solid $hero_badge_border;
-            color: $hero_badge_text;
+            background: rgba(129, 140, 248, 0.15);
+            border: 1px solid rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
             font-size: 13px;
             font-weight: 600;
             letter-spacing: 0.3px;
@@ -284,7 +172,7 @@ CSS_TEMPLATE = string.Template(
         }
         .hero-sub {
             font-size: 18px;
-            color: $hero_sub !important;
+            color: #cbd5e1;
             max-width: 720px;
             margin: 0 auto 34px auto;
             line-height: 1.6;
@@ -292,8 +180,8 @@ CSS_TEMPLATE = string.Template(
 
         /* ---------- CARDS ---------- */
         .glass-card {
-            background: $card_bg;
-            border: 1px solid $card_border;
+            background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.09);
             border-radius: 18px;
             padding: 26px 24px;
             height: 100%;
@@ -301,11 +189,11 @@ CSS_TEMPLATE = string.Template(
         }
         .glass-card:hover {
             transform: translateY(-4px);
-            border-color: $card_border_hover;
+            border-color: rgba(165, 180, 252, 0.5);
         }
         .card-icon { font-size: 30px; margin-bottom: 10px; display:block; }
-        .card-title { font-size: 17px; font-weight: 700; color: $card_title !important; margin-bottom: 6px; }
-        .card-text { font-size: 14px; color: $card_text !important; line-height: 1.5; }
+        .card-title { font-size: 17px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
+        .card-text { font-size: 14px; color: #94a3b8; line-height: 1.5; }
 
         .step-number {
             font-size: 34px;
@@ -319,14 +207,14 @@ CSS_TEMPLATE = string.Template(
         .section-title {
             font-size: 30px;
             font-weight: 800;
-            color: $text_main !important;
+            color: #f8fafc;
             text-align: center;
             margin-top: 10px;
             margin-bottom: 6px;
         }
         .section-sub {
             text-align: center;
-            color: $text_muted !important;
+            color: #94a3b8;
             font-size: 15px;
             margin-bottom: 34px;
         }
@@ -343,18 +231,18 @@ CSS_TEMPLATE = string.Template(
         .badge-have {
             background: rgba(52, 211, 153, 0.15);
             border: 1px solid rgba(52, 211, 153, 0.5);
-            color: $badge_have_text;
+            color: #6ee7b7;
         }
         .badge-missing {
             background: rgba(248, 113, 113, 0.15);
             border: 1px solid rgba(248, 113, 113, 0.5);
-            color: $badge_missing_text;
+            color: #fca5a5;
         }
 
         /* ---------- METRIC / SCORE CARDS ---------- */
         .metric-card {
-            background: $metric_card_bg;
-            border: 1px solid $metric_card_border;
+            background: linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.09);
             border-radius: 18px;
             padding: 22px;
             text-align: center;
@@ -368,14 +256,14 @@ CSS_TEMPLATE = string.Template(
         }
         .metric-label {
             font-size: 14px;
-            color: $text_muted !important;
+            color: #94a3b8;
             font-weight: 600;
             margin-top: 4px;
         }
 
         .match-hero {
-            background: $match_hero_bg;
-            border: 1px solid $match_hero_border;
+            background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(236,72,153,0.2));
+            border: 1px solid rgba(165,180,252,0.4);
             border-radius: 22px;
             padding: 34px;
             text-align: center;
@@ -384,24 +272,24 @@ CSS_TEMPLATE = string.Template(
 
         /* ---------- ROADMAP ---------- */
         .roadmap-item {
-            background: $roadmap_bg;
+            background: rgba(255,255,255,0.04);
             border-left: 4px solid #818cf8;
             border-radius: 12px;
             padding: 16px 20px;
             margin-bottom: 14px;
         }
-        .roadmap-title { font-size: 16px; font-weight: 700; color: $roadmap_title !important; }
-        .roadmap-meta { font-size: 12.5px; color: #6366f1; font-weight: 600; margin-bottom: 6px;}
-        .roadmap-body { font-size: 14px; color: $roadmap_body !important; line-height: 1.5; }
+        .roadmap-title { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+        .roadmap-meta { font-size: 12.5px; color: #a5b4fc; font-weight: 600; margin-bottom: 6px;}
+        .roadmap-body { font-size: 14px; color: #cbd5e1; line-height: 1.5; }
 
         /* ---------- PRIORITY TAGS ---------- */
-        .tag-high { color: $tag_high; font-weight: 700; }
-        .tag-medium { color: $tag_medium; font-weight: 700; }
-        .tag-low { color: $tag_low; font-weight: 700; }
+        .tag-high { color: #fca5a5; font-weight: 700; }
+        .tag-medium { color: #fcd34d; font-weight: 700; }
+        .tag-low { color: #93c5fd; font-weight: 700; }
 
         .gap-card {
-            background: $gap_card_bg;
-            border: 1px solid $gap_card_border;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 14px;
             padding: 18px 20px;
             margin-bottom: 12px;
@@ -437,21 +325,20 @@ CSS_TEMPLATE = string.Template(
         .fade-in { animation: fadeInUp 0.6s ease; }
 
         section[data-testid="stFileUploaderDropzone"] {
-            background: $dropzone_bg;
-            border: 1.5px dashed $dropzone_border;
+            background: rgba(255,255,255,0.03);
+            border: 1.5px dashed rgba(165,180,252,0.4);
             border-radius: 14px;
         }
     </style>
-    """
+    """,
+    unsafe_allow_html=True,
 )
-
-st.markdown(CSS_TEMPLATE.substitute(active_theme), unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------
 # TOP NAV
 # --------------------------------------------------------------------------
 st.markdown("### 🧭 SkillGap AI")
-n1, n2, n3, n4 = st.columns(4)
+n1, n2, n3 = st.columns(3)
 with n1:
     if st.button("🏠 Home", use_container_width=True):
         go_to("home")
@@ -461,11 +348,6 @@ with n2:
 with n3:
     if st.button("🤖 Assistant", use_container_width=True):
         go_to("assistant")
-with n4:
-    theme_label = "☀️ Light Mode" if st.session_state.theme == "dark" else "🌙 Dark Mode"
-    if st.button(theme_label, use_container_width=True):
-        st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
-        st.rerun()
 
 st.markdown("<hr style='border-color: rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
 

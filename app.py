@@ -223,8 +223,11 @@ CSS_TEMPLATE = string.Template(
         .stApp, .block-container, p, span, label, .stMarkdown, .stText,
         h1, h2, h3, h4, h5, h6,
         [data-testid="stChatMessage"], [data-testid="stChatMessage"] p,
-        [data-testid="stMarkdownContainer"] {
-            color: $text_main;
+        [data-testid="stMarkdownContainer"],
+        [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p,
+        [data-testid="stCaptionContainer"], .stCaption,
+        [data-testid="stExpander"] summary, [data-testid="stExpander"] p {
+            color: $text_main !important;
         }
         [data-testid="stChatMessage"] {
             background: $card_bg !important;
@@ -281,7 +284,7 @@ CSS_TEMPLATE = string.Template(
         }
         .hero-sub {
             font-size: 18px;
-            color: $hero_sub;
+            color: $hero_sub !important;
             max-width: 720px;
             margin: 0 auto 34px auto;
             line-height: 1.6;
@@ -301,8 +304,8 @@ CSS_TEMPLATE = string.Template(
             border-color: $card_border_hover;
         }
         .card-icon { font-size: 30px; margin-bottom: 10px; display:block; }
-        .card-title { font-size: 17px; font-weight: 700; color: $card_title; margin-bottom: 6px; }
-        .card-text { font-size: 14px; color: $card_text; line-height: 1.5; }
+        .card-title { font-size: 17px; font-weight: 700; color: $card_title !important; margin-bottom: 6px; }
+        .card-text { font-size: 14px; color: $card_text !important; line-height: 1.5; }
 
         .step-number {
             font-size: 34px;
@@ -316,14 +319,14 @@ CSS_TEMPLATE = string.Template(
         .section-title {
             font-size: 30px;
             font-weight: 800;
-            color: $text_main;
+            color: $text_main !important;
             text-align: center;
             margin-top: 10px;
             margin-bottom: 6px;
         }
         .section-sub {
             text-align: center;
-            color: $text_muted;
+            color: $text_muted !important;
             font-size: 15px;
             margin-bottom: 34px;
         }
@@ -365,7 +368,7 @@ CSS_TEMPLATE = string.Template(
         }
         .metric-label {
             font-size: 14px;
-            color: $text_muted;
+            color: $text_muted !important;
             font-weight: 600;
             margin-top: 4px;
         }
@@ -387,9 +390,9 @@ CSS_TEMPLATE = string.Template(
             padding: 16px 20px;
             margin-bottom: 14px;
         }
-        .roadmap-title { font-size: 16px; font-weight: 700; color: $roadmap_title; }
+        .roadmap-title { font-size: 16px; font-weight: 700; color: $roadmap_title !important; }
         .roadmap-meta { font-size: 12.5px; color: #6366f1; font-weight: 600; margin-bottom: 6px;}
-        .roadmap-body { font-size: 14px; color: $roadmap_body; line-height: 1.5; }
+        .roadmap-body { font-size: 14px; color: $roadmap_body !important; line-height: 1.5; }
 
         /* ---------- PRIORITY TAGS ---------- */
         .tag-high { color: $tag_high; font-weight: 700; }
